@@ -1,0 +1,2 @@
+# 모든 텍스트 파일을 LF로 통일 (Prettier 기본값 endOfLine: lf와 일치)
+* text=auto eol=lf
