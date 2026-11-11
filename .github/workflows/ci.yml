@@ -1,0 +1,49 @@
+name: CI
+
+# 언제 실행할지: 모든 PR, 그리고 main에 push(= PR이 병합)될 때
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# 워크플로에 필요한 최소 권한만 부여 (코드 읽기만)
+permissions:
+  contents: read
+
+# 같은 브랜치에 새 커밋이 올라오면 이전 실행을 취소해 시간 절약
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 가져오기
+        uses: actions/checkout@v5
+
+      # 버전을 적지 않으면 package.json의 "packageManager"(pnpm@12.18.0)를 따른다
+      - name: pnpm 설치
+        uses: pnpm/action-setup@v4
+
+      - name: Node LTS 설정 (pnpm 캐시)
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      # --frozen-lockfile: pnpm-lock.yaml과 package.json이 맞지 않으면 lock을 고치지 않고 실패
+      - name: 의존성 설치
+        run: pnpm install --frozen-lockfile
+
+      - name: 타입 검사
+        run: pnpm typecheck
+
+      - name: 린트
+        run: pnpm lint
+
+      - name: 포맷 검사
+        run: pnpm format:check
+
+      - name: 테스트
+        run: pnpm test
