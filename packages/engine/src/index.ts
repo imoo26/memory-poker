@@ -39,3 +39,25 @@ export {
   getSelectionBands,
   rankSelections,
 } from './ai';
+
+export type {
+  GameAction,
+  GameResult,
+  GameState,
+  HandOutcome,
+  IdleState,
+  MemorizeState,
+  Phase,
+  ResultState,
+  SelectState,
+  TimeoutOutcome,
+  Winner,
+} from './game';
+export {
+  INITIAL_GAME_STATE,
+  MEMORIZE_MS,
+  SELECT_MS,
+  gameReducer,
+  visibleBoard,
+  visibleCommunity,
+} from './game';

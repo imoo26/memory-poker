@@ -228,10 +228,10 @@ export const DEFAULT_AI_CONFIG: AiConfig = { hardRatio: 0.3, easyRatio: 0.3 };
 ### 설계 (리듀서 방식: React `useReducer`에 그대로 연결됨)
 
 ```ts
-export type Phase = 'memorize' | 'select' | 'result';
+export type Phase = 'idle' | 'memorize' | 'select' | 'result'; // idle: START 전 (시작 화면)
 
 export type GameAction =
-  | { type: 'START'; difficulty: Difficulty; seed: number }
+  | { type: 'START'; difficulty: Difficulty; seed: number; aiConfig?: AiConfig } // idle, result에서만
   | { type: 'MEMORIZE_TIME_UP' }
   | { type: 'TOGGLE_CELL'; index: CellIndex }
   | { type: 'SUBMIT' }
@@ -255,32 +255,33 @@ export function visibleCommunity(state: GameState): readonly [Card, Card, Card] 
   - 선택 단계: 보드 16장 모두 뒷면, 공유 카드 공개. **플레이어가 고른 칸도 뒷면 그대로**이고, 어느 칸을 골랐는지는 `GameState`의 선택 인덱스로만 알 수 있다 (기억에 의존해 고르게 하기 위함)
   - 결과 단계: 기본은 플레이어가 고른 칸(시간 초과면 0~1칸)과 컴퓨터가 고른 2칸만 앞면, 나머지는 뒷면. 공유 카드 공개
   - 결과 단계의 "전체 카드 보기": `GameState`에 `revealAll: boolean`을 두고 `TOGGLE_REVEAL_ALL` 액션으로 켜고 끈다. 켜져 있으면 `visibleBoard`가 16장 모두 앞면을 반환한다. 이 액션은 결과 단계에서만 받고(다른 단계에서는 무시), `START`와 `REMATCH` 때 `false`로 초기화된다. UI의 `useState`가 아니라 엔진 상태로 두는 이유: 선택 단계에서 실수로 전체 공개되는 일을 엔진이 막고, 재대결 시 초기화를 따로 신경 쓰지 않아도 된다.
-- 판마다 시드를 다르게 파생해서(예: 기본 시드 + 판 번호) 재대결해도 재현 가능하게 한다.
+- 판마다 시드를 다르게 파생해서(예: 기본 시드 + 판 번호) 재대결해도 재현 가능하게 한다. 구현: 배치 시드 = `seed + round × 2`, AI 시드 = `seed + round × 2 + 1`
+- 선택 단계에서 2칸을 고른 상태로 시간이 끝나면 제출한 것으로 보고 정상 판정한다 (2칸 미만일 때만 시간 초과 패배).
 - 컴퓨터 선택은 선택 단계가 시작될 때 결정해 두고, 결과 단계에서 공개한다.
 - `MEMORIZE_MS = 60_000`, `SELECT_MS = 30_000` 상수로 export (UI 타이머가 사용)
 
 ### 작업
 
-- [ ] `GameState`, `GameResult` 타입 (승자: player / ai / draw, 사유: hand / timeout)
-- [ ] 각 단계에서 허용되지 않는 액션은 상태를 바꾸지 않음
-- [ ] 선택 단계: 칸 토글, 최대 2칸
-- [ ] 판정: 시간 초과 패배 처리, 족보 비교
-- [ ] 무승부 → `REMATCH`로 새 배치, 판 번호 증가
-- [ ] `visibleBoard(state)`: 암기 단계에서는 16장 앞면, 선택 단계에서는 16칸 모두 `null`, 결과 단계에서는 양쪽이 고른 칸만 앞면 (`revealAll`이면 16장 모두 앞면)
-- [ ] `TOGGLE_REVEAL_ALL`: 결과 단계에서만 `revealAll` 토글, `START`/`REMATCH` 때 `false`로 초기화
-- [ ] `visibleCommunity(state)`: 암기 단계에서는 `null`, 선택·결과 단계에서는 공유 카드 3장
+- [x] `GameState`, `GameResult` 타입 (승자: player / ai / draw, 사유: hand / timeout)
+- [x] 각 단계에서 허용되지 않는 액션은 상태를 바꾸지 않음
+- [x] 선택 단계: 칸 토글, 최대 2칸
+- [x] 판정: 시간 초과 패배 처리, 족보 비교
+- [x] 무승부 → `REMATCH`로 새 배치, 판 번호 증가
+- [x] `visibleBoard(state)`: 암기 단계에서는 16장 앞면, 선택 단계에서는 16칸 모두 `null`, 결과 단계에서는 양쪽이 고른 칸만 앞면 (`revealAll`이면 16장 모두 앞면)
+- [x] `TOGGLE_REVEAL_ALL`: 결과 단계에서만 `revealAll` 토글, `START`/`REMATCH` 때 `false`로 초기화
+- [x] `visibleCommunity(state)`: 암기 단계에서는 `null`, 선택·결과 단계에서는 공유 카드 3장
 
 ### 테스트
 
-- [ ] 정상 흐름: START → 시간 종료 → 2칸 선택 → 제출 → 결과
-- [ ] 2칸 미만에서 시간 종료 → 플레이어 패배 (0칸, 1칸 각각)
-- [ ] 무승부 상황을 시드나 배치를 고정해 만들고, REMATCH 후 카드가 바뀌는지 확인
-- [ ] 잘못된 단계의 액션 무시
-- [ ] 공유 카드 공개 시점: START 직후(암기 단계) `visibleCommunity`는 `null`, `MEMORIZE_TIME_UP` 후 `deal.community`와 같은 3장, 결과 단계에서도 3장. REMATCH 후 새 암기 단계에서 다시 `null`
-- [ ] 보드 공개 시점: 암기 단계에서 `visibleBoard`는 `deal.board`와 같음, `MEMORIZE_TIME_UP` 후 16칸 모두 `null`
-- [ ] 선택한 칸 비공개: 선택 단계에서 1칸, 2칸을 토글해도 `visibleBoard`는 16칸 모두 `null`
-- [ ] 결과 단계 공개 범위: 플레이어와 컴퓨터가 고른 칸만 앞면이고 나머지는 `null`. 양쪽이 같은 칸을 고른 경우, 시간 초과(0칸, 1칸) 경우도 확인
-- [ ] 전체 카드 보기: 결과 단계에서 `TOGGLE_REVEAL_ALL` → `visibleBoard`가 `deal.board`와 같음, 한 번 더 → 고른 칸만 앞면으로 복귀. 암기·선택 단계에서는 상태가 바뀌지 않음(선택 단계에서 보내도 16칸 모두 `null`). 켠 채로 `REMATCH` → 새 판에서 `revealAll`이 `false`
+- [x] 정상 흐름: START → 시간 종료 → 2칸 선택 → 제출 → 결과
+- [x] 2칸 미만에서 시간 종료 → 플레이어 패배 (0칸, 1칸 각각)
+- [x] 무승부 상황을 시드나 배치를 고정해 만들고, REMATCH 후 카드가 바뀌는지 확인
+- [x] 잘못된 단계의 액션 무시
+- [x] 공유 카드 공개 시점: START 직후(암기 단계) `visibleCommunity`는 `null`, `MEMORIZE_TIME_UP` 후 `deal.community`와 같은 3장, 결과 단계에서도 3장. REMATCH 후 새 암기 단계에서 다시 `null`
+- [x] 보드 공개 시점: 암기 단계에서 `visibleBoard`는 `deal.board`와 같음, `MEMORIZE_TIME_UP` 후 16칸 모두 `null`
+- [x] 선택한 칸 비공개: 선택 단계에서 1칸, 2칸을 토글해도 `visibleBoard`는 16칸 모두 `null`
+- [x] 결과 단계 공개 범위: 플레이어와 컴퓨터가 고른 칸만 앞면이고 나머지는 `null`. 양쪽이 같은 칸을 고른 경우, 시간 초과(0칸, 1칸) 경우도 확인
+- [x] 전체 카드 보기: 결과 단계에서 `TOGGLE_REVEAL_ALL` → `visibleBoard`가 `deal.board`와 같음, 한 번 더 → 고른 칸만 앞면으로 복귀. 암기·선택 단계에서는 상태가 바뀌지 않음(선택 단계에서 보내도 16칸 모두 `null`). 켠 채로 `REMATCH` → 새 판에서 `revealAll`이 `false`
 
 ### 배울 것
 
