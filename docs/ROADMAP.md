@@ -44,7 +44,8 @@ PR마다 테스트, 타입 검사, 린트가 자동으로 돌게 한다. 1단계
 ```ts
 export const SUITS = ['s', 'h', 'd', 'c'] as const;
 export type Suit = (typeof SUITS)[number]; // 's' | 'h' | 'd' | 'c'
-export type Rank = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14; // 11=J, 12=Q, 13=K, 14=A
+export const RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
+export type Rank = (typeof RANKS)[number]; // 2 | … | 14 (11=J, 12=Q, 13=K, 14=A)
 export interface Card {
   readonly rank: Rank;
   readonly suit: Suit;
@@ -54,21 +55,21 @@ export type Rng = () => number; // [0, 1) 난수
 
 ### 작업
 
-- [ ] `Suit`, `Rank`, `Card` 타입과 `SUITS`, `RANKS` 상수
-- [ ] `cardToString(card)`: `{ rank: 14, suit: 's' }` → `'As'` (T=10, J, Q, K, A)
-- [ ] `parseCard('As')`, `parseCards('As Kd Th')`: 잘못된 입력이면 에러
-- [ ] `createDeck()`: 52장, 모두 서로 다름
-- [ ] `cardEquals(a, b)`, `cardId(card)`: 0~51 정수 ID (중복 검사, React key에 사용)
-- [ ] `createRng(seed)`: 시드 기반 난수 생성기 (mulberry32 같은 짧은 알고리즘)
-- [ ] `shuffle(cards, rng)`: Fisher–Yates. **원본을 바꾸지 않고 새 배열 반환**
+- [x] `Suit`, `Rank`, `Card` 타입과 `SUITS`, `RANKS` 상수
+- [x] `cardToString(card)`: `{ rank: 14, suit: 's' }` → `'As'` (T=10, J, Q, K, A)
+- [x] `parseCard('As')`, `parseCards('As Kd Th')`: 잘못된 입력이면 에러
+- [x] `createDeck()`: 52장, 모두 서로 다름
+- [x] `cardEquals(a, b)`, `cardId(card)`: 0~51 정수 ID (중복 검사, React key에 사용)
+- [x] `createRng(seed)`: 시드 기반 난수 생성기 (mulberry32 같은 짧은 알고리즘)
+- [x] `shuffle(cards, rng)`: Fisher–Yates. **원본을 바꾸지 않고 새 배열 반환**
 
 ### 테스트
 
-- [ ] 덱 52장, `cardId` 기준 중복 없음
-- [ ] `parseCard` ↔ `cardToString` 왕복 일치 (52장 전부)
-- [ ] 잘못된 입력 에러: `'1s'`, `'Ax'`, `'10s'`, 빈 문자열
-- [ ] 같은 시드 → 같은 셔플 결과, 다른 시드 → 다른 결과
-- [ ] 셔플 후 원소 집합 동일, 원본 배열 불변
+- [x] 덱 52장, `cardId` 기준 중복 없음
+- [x] `parseCard` ↔ `cardToString` 왕복 일치 (52장 전부)
+- [x] 잘못된 입력 에러: `'1s'`, `'Ax'`, `'10s'`, 빈 문자열
+- [x] 같은 시드 → 같은 셔플 결과, 다른 시드 → 다른 결과
+- [x] 셔플 후 원소 집합 동일, 원본 배열 불변
 
 ### 배울 것
 
