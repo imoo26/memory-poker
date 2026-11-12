@@ -201,19 +201,19 @@ export const DEFAULT_AI_CONFIG: AiConfig = { hardRatio: 0.3, easyRatio: 0.3 };
 
 ### 작업
 
-- [ ] `enumerateSelections()`: 120개, `i < j` 오름차순
-- [ ] `rankSelections(deal)`: 120개를 강도 내림차순 **안정 정렬**
-- [ ] `computeBandSizes(total, config)`: 상 = `Math.round(120 × hardRatio)`, 하 = `Math.round(120 × easyRatio)`, 중 = 나머지. 각 비율이 0 초과 1 미만이 아니거나, 반올림 후 상·중·하 중 0개인 구간이 있으면 에러 (비율 합 조건은 없음)
-- [ ] `chooseAiSelection(deal, difficulty, rng, config?)`: 해당 구간에서 무작위 1개
+- [x] `enumerateSelections()`: 120개, `i < j` 오름차순
+- [x] `rankSelections(deal)`: 120개를 강도 내림차순 **안정 정렬**
+- [x] `computeBandSizes(total, config)`: 상 = `Math.round(120 × hardRatio)`, 하 = `Math.round(120 × easyRatio)`, 중 = 나머지. 각 비율이 0 초과 1 미만이 아니거나, 반올림 후 상·중·하 중 0개인 구간이 있으면 에러 (비율 합 조건은 없음)
+- [x] `chooseAiSelection(deal, difficulty, rng, config?)`: 해당 구간에서 무작위 1개
 
 ### 테스트
 
-- [ ] 조합 정확히 120개, 첫 번째 `[0,1]`, 마지막 `[14,15]`
-- [ ] 기본 설정 구간 크기 36 / 48 / 36, 어떤 설정이든 합계 120
-- [ ] 비율 0.33 같은 경계 사례, 잘못된 설정 에러 (비율 0, 1, 음수)
-- [ ] 상 0.5 + 하 0.499 → 중간 구간 0개라 에러
-- [ ] 여러 시드로 반복해도 상은 항상 상위 구간, 하는 항상 하위 구간에서만 선택
-- [ ] 같은 시드 → 같은 선택
+- [x] 조합 정확히 120개, 첫 번째 `[0,1]`, 마지막 `[14,15]`
+- [x] 기본 설정 구간 크기 36 / 48 / 36, 어떤 설정이든 합계 120
+- [x] 비율 0.33 같은 경계 사례, 잘못된 설정 에러 (비율 0, 1, 음수)
+- [x] 상 0.5 + 하 0.499 → 중간 구간 0개라 에러
+- [x] 여러 시드로 반복해도 상은 항상 상위 구간, 하는 항상 하위 구간에서만 선택
+- [x] 같은 시드 → 같은 선택
 
 ### 배울 것
 
