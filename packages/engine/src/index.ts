@@ -14,3 +14,6 @@ export {
   parseCards,
   shuffle,
 } from './card';
+
+export type { HandValue } from './evaluator';
+export { HAND_SIZE, HandCategory, compareHands, evaluateHand } from './evaluator';
