@@ -236,12 +236,14 @@ export type GameAction =
   | { type: 'TOGGLE_CELL'; index: CellIndex }
   | { type: 'SUBMIT' }
   | { type: 'SELECT_TIME_UP' }
+  | { type: 'TOGGLE_REVEAL_ALL' } // 결과 단계의 "전체 카드 보기" 버튼
   | { type: 'REMATCH' };
 
 export function gameReducer(state: GameState, action: GameAction): GameState;
 
 // 지금 화면에 보여줄 보드 16칸. null은 뒷면
-// 암기: 16칸 모두 앞면 / 선택: 16칸 모두 null (고른 칸 포함) / 결과: 플레이어와 컴퓨터가 고른 칸만 앞면
+// 암기: 16칸 모두 앞면 / 선택: 16칸 모두 null (고른 칸 포함)
+// 결과: 기본은 플레이어와 컴퓨터가 고른 칸만 앞면, "전체 카드 보기"를 켜면 16칸 모두 앞면
 export function visibleBoard(state: GameState): readonly (Card | null)[];
 
 // 지금 화면에 보여줄 공유 카드. 암기 단계에서는 null, 선택·결과 단계에서는 3장
@@ -251,7 +253,8 @@ export function visibleCommunity(state: GameState): readonly [Card, Card, Card] 
 - **카드 공개 시점은 엔진이 정한다.** `Deal`에는 처음부터 보드 16장과 공유 카드 3장이 모두 들어 있지만(컴퓨터 선택 계산용), UI는 `deal.board`, `deal.community`를 직접 그리지 않고 `visibleBoard(state)`, `visibleCommunity(state)`의 결과만 그린다. 이렇게 하면 공개 규칙(GAME_RULES 2절)을 엔진 테스트로 보장할 수 있다.
   - 암기 단계: 보드 16장 앞면, 공유 카드 숨김
   - 선택 단계: 보드 16장 모두 뒷면, 공유 카드 공개. **플레이어가 고른 칸도 뒷면 그대로**이고, 어느 칸을 골랐는지는 `GameState`의 선택 인덱스로만 알 수 있다 (기억에 의존해 고르게 하기 위함)
-  - 결과 단계: 플레이어가 고른 칸(시간 초과면 0~1칸)과 컴퓨터가 고른 2칸만 앞면, 나머지는 뒷면. 공유 카드 공개
+  - 결과 단계: 기본은 플레이어가 고른 칸(시간 초과면 0~1칸)과 컴퓨터가 고른 2칸만 앞면, 나머지는 뒷면. 공유 카드 공개
+  - 결과 단계의 "전체 카드 보기": `GameState`에 `revealAll: boolean`을 두고 `TOGGLE_REVEAL_ALL` 액션으로 켜고 끈다. 켜져 있으면 `visibleBoard`가 16장 모두 앞면을 반환한다. 이 액션은 결과 단계에서만 받고(다른 단계에서는 무시), `START`와 `REMATCH` 때 `false`로 초기화된다. UI의 `useState`가 아니라 엔진 상태로 두는 이유: 선택 단계에서 실수로 전체 공개되는 일을 엔진이 막고, 재대결 시 초기화를 따로 신경 쓰지 않아도 된다.
 - 판마다 시드를 다르게 파생해서(예: 기본 시드 + 판 번호) 재대결해도 재현 가능하게 한다.
 - 컴퓨터 선택은 선택 단계가 시작될 때 결정해 두고, 결과 단계에서 공개한다.
 - `MEMORIZE_MS = 60_000`, `SELECT_MS = 30_000` 상수로 export (UI 타이머가 사용)
@@ -263,7 +266,8 @@ export function visibleCommunity(state: GameState): readonly [Card, Card, Card] 
 - [ ] 선택 단계: 칸 토글, 최대 2칸
 - [ ] 판정: 시간 초과 패배 처리, 족보 비교
 - [ ] 무승부 → `REMATCH`로 새 배치, 판 번호 증가
-- [ ] `visibleBoard(state)`: 암기 단계에서는 16장 앞면, 선택 단계에서는 16칸 모두 `null`, 결과 단계에서는 양쪽이 고른 칸만 앞면
+- [ ] `visibleBoard(state)`: 암기 단계에서는 16장 앞면, 선택 단계에서는 16칸 모두 `null`, 결과 단계에서는 양쪽이 고른 칸만 앞면 (`revealAll`이면 16장 모두 앞면)
+- [ ] `TOGGLE_REVEAL_ALL`: 결과 단계에서만 `revealAll` 토글, `START`/`REMATCH` 때 `false`로 초기화
 - [ ] `visibleCommunity(state)`: 암기 단계에서는 `null`, 선택·결과 단계에서는 공유 카드 3장
 
 ### 테스트
@@ -276,6 +280,7 @@ export function visibleCommunity(state: GameState): readonly [Card, Card, Card] 
 - [ ] 보드 공개 시점: 암기 단계에서 `visibleBoard`는 `deal.board`와 같음, `MEMORIZE_TIME_UP` 후 16칸 모두 `null`
 - [ ] 선택한 칸 비공개: 선택 단계에서 1칸, 2칸을 토글해도 `visibleBoard`는 16칸 모두 `null`
 - [ ] 결과 단계 공개 범위: 플레이어와 컴퓨터가 고른 칸만 앞면이고 나머지는 `null`. 양쪽이 같은 칸을 고른 경우, 시간 초과(0칸, 1칸) 경우도 확인
+- [ ] 전체 카드 보기: 결과 단계에서 `TOGGLE_REVEAL_ALL` → `visibleBoard`가 `deal.board`와 같음, 한 번 더 → 고른 칸만 앞면으로 복귀. 암기·선택 단계에서는 상태가 바뀌지 않음(선택 단계에서 보내도 16칸 모두 `null`). 켠 채로 `REMATCH` → 새 판에서 `revealAll`이 `false`
 
 ### 배울 것
 
@@ -297,7 +302,7 @@ export function visibleCommunity(state: GameState): readonly [Card, Card, Card] 
 - [ ] `Board`: 4x4 그리드, 각 칸에 A~P 라벨 표시, 선택 단계에서만 클릭 가능, 선택 강조. `deal.board`가 아니라 `visibleBoard(state)`를 받아 그리고, `null`인 칸은 뒷면. 선택 강조는 뒷면 위에 테두리 등으로만 표시 (앞면을 보여주지 않음)
 - [ ] `CommunityCards`: 공유 카드 3장 (뒤집은 뒤 등장). `deal.community`가 아니라 `visibleCommunity(state)`를 받아 그리고, `null`이면 빈 자리(또는 뒷면)로 표시
 - [ ] `Timer`: 남은 초 표시 (마지막 10초 강조 등)
-- [ ] `ResultPanel`: 양쪽 선택 2장, 족보 이름(한글), 승패, 시간 초과 표시, 무승부면 재대결 버튼
+- [ ] `ResultPanel`: 양쪽 선택 2장, 족보 이름(한글), 승패, 시간 초과 표시, 무승부면 재대결 버튼, "전체 카드 보기 / 고른 카드만 보기" 토글 버튼 (`TOGGLE_REVEAL_ALL` dispatch)
 - [ ] 족보 한글 이름 매핑: 원페어, 투페어, 트리플, 스트레이트 … 로열 스트레이트 플러시
 
 ### 6-3. 엔진 연결
@@ -308,7 +313,7 @@ export function visibleCommunity(state: GameState): readonly [Card, Card, Card] 
 
 ### 6-4. 확인
 
-- [ ] 수동 테스트 체크리스트: 난이도 3종, 시간 초과(0칸/1칸), 무승부 → 재대결, 결과 화면 정보
+- [ ] 수동 테스트 체크리스트: 난이도 3종, 시간 초과(0칸/1칸), 무승부 → 재대결, 결과 화면 정보, 전체 카드 보기 토글
 - [ ] (선택) 개발용으로 암기·선택 시간을 짧게 바꾸는 설정 (예: URL `?fast`)
 - [ ] (선택) React Testing Library로 핵심 컴포넌트 테스트
 
