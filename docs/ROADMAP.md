@@ -239,8 +239,19 @@ export type GameAction =
   | { type: 'REMATCH' };
 
 export function gameReducer(state: GameState, action: GameAction): GameState;
+
+// 지금 화면에 보여줄 보드 16칸. null은 뒷면
+// 암기: 16칸 모두 앞면 / 선택: 16칸 모두 null (고른 칸 포함) / 결과: 플레이어와 컴퓨터가 고른 칸만 앞면
+export function visibleBoard(state: GameState): readonly (Card | null)[];
+
+// 지금 화면에 보여줄 공유 카드. 암기 단계에서는 null, 선택·결과 단계에서는 3장
+export function visibleCommunity(state: GameState): readonly [Card, Card, Card] | null;
 ```
 
+- **카드 공개 시점은 엔진이 정한다.** `Deal`에는 처음부터 보드 16장과 공유 카드 3장이 모두 들어 있지만(컴퓨터 선택 계산용), UI는 `deal.board`, `deal.community`를 직접 그리지 않고 `visibleBoard(state)`, `visibleCommunity(state)`의 결과만 그린다. 이렇게 하면 공개 규칙(GAME_RULES 2절)을 엔진 테스트로 보장할 수 있다.
+  - 암기 단계: 보드 16장 앞면, 공유 카드 숨김
+  - 선택 단계: 보드 16장 모두 뒷면, 공유 카드 공개. **플레이어가 고른 칸도 뒷면 그대로**이고, 어느 칸을 골랐는지는 `GameState`의 선택 인덱스로만 알 수 있다 (기억에 의존해 고르게 하기 위함)
+  - 결과 단계: 플레이어가 고른 칸(시간 초과면 0~1칸)과 컴퓨터가 고른 2칸만 앞면, 나머지는 뒷면. 공유 카드 공개
 - 판마다 시드를 다르게 파생해서(예: 기본 시드 + 판 번호) 재대결해도 재현 가능하게 한다.
 - 컴퓨터 선택은 선택 단계가 시작될 때 결정해 두고, 결과 단계에서 공개한다.
 - `MEMORIZE_MS = 60_000`, `SELECT_MS = 30_000` 상수로 export (UI 타이머가 사용)
@@ -252,6 +263,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState;
 - [ ] 선택 단계: 칸 토글, 최대 2칸
 - [ ] 판정: 시간 초과 패배 처리, 족보 비교
 - [ ] 무승부 → `REMATCH`로 새 배치, 판 번호 증가
+- [ ] `visibleBoard(state)`: 암기 단계에서는 16장 앞면, 선택 단계에서는 16칸 모두 `null`, 결과 단계에서는 양쪽이 고른 칸만 앞면
+- [ ] `visibleCommunity(state)`: 암기 단계에서는 `null`, 선택·결과 단계에서는 공유 카드 3장
 
 ### 테스트
 
@@ -259,6 +272,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState;
 - [ ] 2칸 미만에서 시간 종료 → 플레이어 패배 (0칸, 1칸 각각)
 - [ ] 무승부 상황을 시드나 배치를 고정해 만들고, REMATCH 후 카드가 바뀌는지 확인
 - [ ] 잘못된 단계의 액션 무시
+- [ ] 공유 카드 공개 시점: START 직후(암기 단계) `visibleCommunity`는 `null`, `MEMORIZE_TIME_UP` 후 `deal.community`와 같은 3장, 결과 단계에서도 3장. REMATCH 후 새 암기 단계에서 다시 `null`
+- [ ] 보드 공개 시점: 암기 단계에서 `visibleBoard`는 `deal.board`와 같음, `MEMORIZE_TIME_UP` 후 16칸 모두 `null`
+- [ ] 선택한 칸 비공개: 선택 단계에서 1칸, 2칸을 토글해도 `visibleBoard`는 16칸 모두 `null`
+- [ ] 결과 단계 공개 범위: 플레이어와 컴퓨터가 고른 칸만 앞면이고 나머지는 `null`. 양쪽이 같은 칸을 고른 경우, 시간 초과(0칸, 1칸) 경우도 확인
 
 ### 배울 것
 
@@ -277,8 +294,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState;
 ### 6-2. 컴포넌트
 
 - [ ] `Card`: 앞면(랭크 + ♠♥♦♣, 빨강/검정), 뒷면, **뒤집기 애니메이션** (CSS 3D transform)
-- [ ] `Board`: 4x4 그리드, 각 칸에 A~P 라벨 표시, 선택 단계에서만 클릭 가능, 선택 강조
-- [ ] `CommunityCards`: 공유 카드 3장 (뒤집은 뒤 등장)
+- [ ] `Board`: 4x4 그리드, 각 칸에 A~P 라벨 표시, 선택 단계에서만 클릭 가능, 선택 강조. `deal.board`가 아니라 `visibleBoard(state)`를 받아 그리고, `null`인 칸은 뒷면. 선택 강조는 뒷면 위에 테두리 등으로만 표시 (앞면을 보여주지 않음)
+- [ ] `CommunityCards`: 공유 카드 3장 (뒤집은 뒤 등장). `deal.community`가 아니라 `visibleCommunity(state)`를 받아 그리고, `null`이면 빈 자리(또는 뒷면)로 표시
 - [ ] `Timer`: 남은 초 표시 (마지막 10초 강조 등)
 - [ ] `ResultPanel`: 양쪽 선택 2장, 족보 이름(한글), 승패, 시간 초과 표시, 무승부면 재대결 버튼
 - [ ] 족보 한글 이름 매핑: 원페어, 투페어, 트리플, 스트레이트 … 로열 스트레이트 플러시
