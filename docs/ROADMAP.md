@@ -228,10 +228,12 @@ export const DEFAULT_AI_CONFIG: AiConfig = { hardRatio: 0.3, easyRatio: 0.3 };
 ### 설계 (리듀서 방식: React `useReducer`에 그대로 연결됨)
 
 ```ts
-export type Phase = 'memorize' | 'select' | 'result';
+// idle: START 전 (시작 화면) / ready: 게임 화면에서 "시작" 버튼 대기 (카드 뒷면, 타이머 없음)
+export type Phase = 'idle' | 'ready' | 'memorize' | 'select' | 'result';
 
 export type GameAction =
-  | { type: 'START'; difficulty: Difficulty; seed: number }
+  | { type: 'START'; difficulty: Difficulty; seed: number; aiConfig?: AiConfig } // idle, result에서만 → ready
+  | { type: 'BEGIN_MEMORIZE' } // ready에서만 → memorize ("시작" 버튼. UI는 이때부터 60초를 잰다)
   | { type: 'MEMORIZE_TIME_UP' }
   | { type: 'TOGGLE_CELL'; index: CellIndex }
   | { type: 'SUBMIT' }
@@ -251,36 +253,40 @@ export function visibleCommunity(state: GameState): readonly [Card, Card, Card] 
 ```
 
 - **카드 공개 시점은 엔진이 정한다.** `Deal`에는 처음부터 보드 16장과 공유 카드 3장이 모두 들어 있지만(컴퓨터 선택 계산용), UI는 `deal.board`, `deal.community`를 직접 그리지 않고 `visibleBoard(state)`, `visibleCommunity(state)`의 결과만 그린다. 이렇게 하면 공개 규칙(GAME_RULES 2절)을 엔진 테스트로 보장할 수 있다.
-  - 암기 단계: 보드 16장 앞면, 공유 카드 숨김
+  - 준비 단계: 보드 16장 모두 뒷면, 공유 카드 숨김 (배치는 이미 정해져 있지만 보여주지 않음)
+  - 암기 단계: 보드 16장 앞면, 공유 카드 숨김. 조기 종료 액션은 없다 (항상 60초)
   - 선택 단계: 보드 16장 모두 뒷면, 공유 카드 공개. **플레이어가 고른 칸도 뒷면 그대로**이고, 어느 칸을 골랐는지는 `GameState`의 선택 인덱스로만 알 수 있다 (기억에 의존해 고르게 하기 위함)
   - 결과 단계: 기본은 플레이어가 고른 칸(시간 초과면 0~1칸)과 컴퓨터가 고른 2칸만 앞면, 나머지는 뒷면. 공유 카드 공개
   - 결과 단계의 "전체 카드 보기": `GameState`에 `revealAll: boolean`을 두고 `TOGGLE_REVEAL_ALL` 액션으로 켜고 끈다. 켜져 있으면 `visibleBoard`가 16장 모두 앞면을 반환한다. 이 액션은 결과 단계에서만 받고(다른 단계에서는 무시), `START`와 `REMATCH` 때 `false`로 초기화된다. UI의 `useState`가 아니라 엔진 상태로 두는 이유: 선택 단계에서 실수로 전체 공개되는 일을 엔진이 막고, 재대결 시 초기화를 따로 신경 쓰지 않아도 된다.
-- 판마다 시드를 다르게 파생해서(예: 기본 시드 + 판 번호) 재대결해도 재현 가능하게 한다.
+- 판마다 시드를 다르게 파생해서(예: 기본 시드 + 판 번호) 재대결해도 재현 가능하게 한다. 구현: 배치 시드 = `seed + round × 2`, AI 시드 = `seed + round × 2 + 1`
+- 선택 단계에서 2칸을 고른 상태로 시간이 끝나면 제출한 것으로 보고 정상 판정한다 (2칸 미만일 때만 시간 초과 패배).
 - 컴퓨터 선택은 선택 단계가 시작될 때 결정해 두고, 결과 단계에서 공개한다.
 - `MEMORIZE_MS = 60_000`, `SELECT_MS = 30_000` 상수로 export (UI 타이머가 사용)
 
 ### 작업
 
-- [ ] `GameState`, `GameResult` 타입 (승자: player / ai / draw, 사유: hand / timeout)
-- [ ] 각 단계에서 허용되지 않는 액션은 상태를 바꾸지 않음
-- [ ] 선택 단계: 칸 토글, 최대 2칸
-- [ ] 판정: 시간 초과 패배 처리, 족보 비교
-- [ ] 무승부 → `REMATCH`로 새 배치, 판 번호 증가
-- [ ] `visibleBoard(state)`: 암기 단계에서는 16장 앞면, 선택 단계에서는 16칸 모두 `null`, 결과 단계에서는 양쪽이 고른 칸만 앞면 (`revealAll`이면 16장 모두 앞면)
-- [ ] `TOGGLE_REVEAL_ALL`: 결과 단계에서만 `revealAll` 토글, `START`/`REMATCH` 때 `false`로 초기화
-- [ ] `visibleCommunity(state)`: 암기 단계에서는 `null`, 선택·결과 단계에서는 공유 카드 3장
+- [x] `GameState`, `GameResult` 타입 (승자: player / ai / draw, 사유: hand / timeout)
+- [x] 각 단계에서 허용되지 않는 액션은 상태를 바꾸지 않음
+- [x] 선택 단계: 칸 토글, 최대 2칸
+- [x] 판정: 시간 초과 패배 처리, 족보 비교
+- [x] 무승부 → `REMATCH`로 새 배치, 판 번호 증가
+- [x] `visibleBoard(state)`: 암기 단계에서는 16장 앞면, 선택 단계에서는 16칸 모두 `null`, 결과 단계에서는 양쪽이 고른 칸만 앞면 (`revealAll`이면 16장 모두 앞면)
+- [x] `TOGGLE_REVEAL_ALL`: 결과 단계에서만 `revealAll` 토글, `START`/`REMATCH` 때 `false`로 초기화
+- [x] `visibleCommunity(state)`: 암기 단계에서는 `null`, 선택·결과 단계에서는 공유 카드 3장
+- [x] 준비 단계 `'ready'` 추가: `START`와 `REMATCH`는 `ready`로 가고, `BEGIN_MEMORIZE`로 `memorize` 시작. `ready`에서는 `visibleBoard` 16칸 모두 `null`, `visibleCommunity`는 `null`
 
 ### 테스트
 
-- [ ] 정상 흐름: START → 시간 종료 → 2칸 선택 → 제출 → 결과
-- [ ] 2칸 미만에서 시간 종료 → 플레이어 패배 (0칸, 1칸 각각)
-- [ ] 무승부 상황을 시드나 배치를 고정해 만들고, REMATCH 후 카드가 바뀌는지 확인
-- [ ] 잘못된 단계의 액션 무시
-- [ ] 공유 카드 공개 시점: START 직후(암기 단계) `visibleCommunity`는 `null`, `MEMORIZE_TIME_UP` 후 `deal.community`와 같은 3장, 결과 단계에서도 3장. REMATCH 후 새 암기 단계에서 다시 `null`
-- [ ] 보드 공개 시점: 암기 단계에서 `visibleBoard`는 `deal.board`와 같음, `MEMORIZE_TIME_UP` 후 16칸 모두 `null`
-- [ ] 선택한 칸 비공개: 선택 단계에서 1칸, 2칸을 토글해도 `visibleBoard`는 16칸 모두 `null`
-- [ ] 결과 단계 공개 범위: 플레이어와 컴퓨터가 고른 칸만 앞면이고 나머지는 `null`. 양쪽이 같은 칸을 고른 경우, 시간 초과(0칸, 1칸) 경우도 확인
-- [ ] 전체 카드 보기: 결과 단계에서 `TOGGLE_REVEAL_ALL` → `visibleBoard`가 `deal.board`와 같음, 한 번 더 → 고른 칸만 앞면으로 복귀. 암기·선택 단계에서는 상태가 바뀌지 않음(선택 단계에서 보내도 16칸 모두 `null`). 켠 채로 `REMATCH` → 새 판에서 `revealAll`이 `false`
+- [x] 정상 흐름: START → 시간 종료 → 2칸 선택 → 제출 → 결과
+- [x] 2칸 미만에서 시간 종료 → 플레이어 패배 (0칸, 1칸 각각)
+- [x] 무승부 상황을 시드나 배치를 고정해 만들고, REMATCH 후 카드가 바뀌는지 확인
+- [x] 잘못된 단계의 액션 무시
+- [x] 공유 카드 공개 시점: START 직후(암기 단계) `visibleCommunity`는 `null`, `MEMORIZE_TIME_UP` 후 `deal.community`와 같은 3장, 결과 단계에서도 3장. REMATCH 후 새 암기 단계에서 다시 `null`
+- [x] 보드 공개 시점: 암기 단계에서 `visibleBoard`는 `deal.board`와 같음, `MEMORIZE_TIME_UP` 후 16칸 모두 `null`
+- [x] 선택한 칸 비공개: 선택 단계에서 1칸, 2칸을 토글해도 `visibleBoard`는 16칸 모두 `null`
+- [x] 결과 단계 공개 범위: 플레이어와 컴퓨터가 고른 칸만 앞면이고 나머지는 `null`. 양쪽이 같은 칸을 고른 경우, 시간 초과(0칸, 1칸) 경우도 확인
+- [x] 전체 카드 보기: 결과 단계에서 `TOGGLE_REVEAL_ALL` → `visibleBoard`가 `deal.board`와 같음, 한 번 더 → 고른 칸만 앞면으로 복귀. 암기·선택 단계에서는 상태가 바뀌지 않음(선택 단계에서 보내도 16칸 모두 `null`). 켠 채로 `REMATCH` → 새 판에서 `revealAll`이 `false`
+- [x] 준비 단계: `START` 후와 `REMATCH` 후 모두 `ready`이고 카드가 보이지 않음, `BEGIN_MEMORIZE` 후 `memorize`에서 16장 앞면. `ready`에서 `MEMORIZE_TIME_UP` 등 다른 액션은 무시, `BEGIN_MEMORIZE`는 `ready` 외 단계에서 무시
 
 ### 배울 것
 
@@ -294,14 +300,15 @@ export function visibleCommunity(state: GameState): readonly [Card, Card, Card] 
 
 - [ ] Vite 템플릿의 예제 코드와 이미지 제거
 - [ ] 스타일 방식 결정: **CSS Modules** 추천 (Vite 기본 지원, 추가 학습 최소)
-- [ ] 화면 구성: 시작 화면 → 게임 화면 → 결과 화면
+- [ ] 화면 구성: 시작 화면(`idle`, 난이도 선택) → 게임 화면(`ready` "시작" 버튼 → `memorize` → `select`) → 결과 화면(`result`)
 
 ### 6-2. 컴포넌트
 
 - [ ] `Card`: 앞면(랭크 + ♠♥♦♣, 빨강/검정), 뒷면, **뒤집기 애니메이션** (CSS 3D transform)
-- [ ] `Board`: 4x4 그리드, 각 칸에 A~P 라벨 표시, 선택 단계에서만 클릭 가능, 선택 강조. `deal.board`가 아니라 `visibleBoard(state)`를 받아 그리고, `null`인 칸은 뒷면. 선택 강조는 뒷면 위에 테두리 등으로만 표시 (앞면을 보여주지 않음)
+- [ ] `Board`: 4x4 그리드, 선택·결과 단계에서만 각 칸에 A~P 문자 라벨 표시 (준비·암기 단계에서는 라벨 없음, 번호 1~16은 표시하지 않음), 선택 단계에서만 클릭 가능, 선택 강조. `deal.board`가 아니라 `visibleBoard(state)`를 받아 그리고, `null`인 칸은 뒷면. 선택 강조는 뒷면 위에 테두리 등으로만 표시 (앞면을 보여주지 않음)
 - [ ] `CommunityCards`: 공유 카드 3장 (뒤집은 뒤 등장). `deal.community`가 아니라 `visibleCommunity(state)`를 받아 그리고, `null`이면 빈 자리(또는 뒷면)로 표시
-- [ ] `Timer`: 남은 초 표시 (마지막 10초 강조 등)
+- [ ] 준비 단계의 "시작" 버튼: 누르면 `BEGIN_MEMORIZE` dispatch (새 게임, 재대결 모두)
+- [ ] `Timer`: 남은 초 표시 (마지막 10초 강조 등). 준비 단계에서는 돌지 않음
 - [ ] `ResultPanel`: 양쪽 선택 2장, 족보 이름(한글), 승패, 시간 초과 표시, 무승부면 재대결 버튼, "전체 카드 보기 / 고른 카드만 보기" 토글 버튼 (`TOGGLE_REVEAL_ALL` dispatch)
 - [ ] 족보 한글 이름 매핑: 원페어, 투페어, 트리플, 스트레이트 … 로열 스트레이트 플러시
 
@@ -335,14 +342,13 @@ JSX, 컴포넌트와 props, `useState`/`useReducer`/`useEffect`, effect 정리(c
 
 ---
 
-## 6단계 전에 정해야 할 것
+## 6단계 전에 정한 것 (확정)
 
-| 질문                                            | 선택지                                                |
-| ----------------------------------------------- | ----------------------------------------------------- |
-| 선택 단계에서 고른 칸을 30초 안에 바꿀 수 있나? | 자유롭게 토글 / 한번 고르면 확정                      |
-| 제출 버튼이 있나?                               | 2칸 고르고 제출하면 즉시 결과 / 30초가 다 지나야 결과 |
-| 무승부 후 재대결 시작 방식                      | 버튼을 눌러 시작 / 몇 초 뒤 자동 시작                 |
-| 암기 단계 조기 종료                             | 불가 (항상 60초) / "준비 완료" 버튼으로 바로 넘어감   |
-| 칸 라벨 표시                                    | 문자만(A~P) / 번호만(1~16) / 둘 다                    |
-
-5단계 설계는 "토글 가능 + 제출 버튼 + 버튼으로 재대결"을 가정했다. 결정이 다르면 5단계 시작 전에 이 문서와 `GAME_RULES.md`를 수정한다.
+| 질문                                            | 결정                                                                                |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 선택 단계에서 고른 칸을 30초 안에 바꿀 수 있나? | 자유롭게 토글                                                                       |
+| 제출 버튼이 있나?                               | 있음. 2칸 고르고 제출하면 즉시 결과                                                 |
+| 무승부 후 재대결 시작 방식                      | 버튼을 눌러 재대결 → 준비 단계                                                      |
+| 암기 시작 방식                                  | 새 게임·재대결 모두 준비 단계에서 "시작" 버튼을 눌러야 16장 공개와 60초 타이머 시작 |
+| 암기 단계 조기 종료                             | 불가 (항상 60초)                                                                    |
+| 칸 라벨 표시                                    | 문자만(A~P). 암기 카드가 뒤집힌 다음(선택 단계부터) 표시                            |
