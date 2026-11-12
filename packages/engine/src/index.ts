@@ -29,3 +29,13 @@ export {
   isValidSelection,
   labelToIndex,
 } from './board';
+
+export type { AiConfig, BandSizes, Difficulty, RankedSelection } from './ai';
+export {
+  DEFAULT_AI_CONFIG,
+  chooseAiSelection,
+  computeBandSizes,
+  enumerateSelections,
+  getSelectionBands,
+  rankSelections,
+} from './ai';

@@ -89,8 +89,11 @@ export function createRng(seed: number): Rng {
   };
 }
 
-/** [0, length) 범위의 정수 하나를 뽑는다. rng가 [0, 1)을 벗어나면 에러. */
-function randomIndex(rng: Rng, length: number): number {
+/**
+ * [0, length) 범위의 정수 하나를 뽑는다. rng가 [0, 1)을 벗어나면 에러.
+ * 엔진 내부용 (ai.ts에서도 사용). index.ts로 공개하지 않는다.
+ */
+export function randomIndex(rng: Rng, length: number): number {
   const r = rng();
   if (!(r >= 0 && r < 1)) {
     throw new Error(`Rng must return a number in [0, 1): ${r}`);
