@@ -1,0 +1,50 @@
+.timer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 360px);
+}
+
+.seconds {
+  min-width: 3.5em;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.track {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  background: var(--gold);
+  transform-origin: left;
+  transition: transform 0.1s linear;
+}
+
+.warning .seconds {
+  color: var(--danger);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.warning .bar {
+  background: var(--danger);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .warning .seconds {
+    animation: none;
+  }
+}

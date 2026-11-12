@@ -1,0 +1,65 @@
+.game {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.meta {
+  display: flex;
+  gap: 14px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.status {
+  width: 100%;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.message {
+  margin: 0;
+  font-weight: 600;
+}
+
+.table {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+/* 결과 패널이 나타나도 보드 위치가 움직이지 않도록 폭을 고정 */
+.side {
+  width: 420px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.primary {
+  min-width: 160px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--gold);
+  color: #1b1b1f;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

@@ -1,0 +1,120 @@
+.panel {
+  width: min(100%, 460px);
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.headline {
+  margin: 0;
+  font-size: 28px;
+  text-align: center;
+}
+
+.win {
+  color: var(--gold);
+}
+
+.lose {
+  color: var(--danger);
+}
+
+.draw {
+  color: var(--text);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 7.5em auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.who {
+  font-weight: 700;
+}
+
+.player {
+  color: var(--player);
+}
+
+.ai {
+  color: var(--ai);
+}
+
+.cards {
+  display: flex;
+  gap: 6px;
+  min-height: 64px;
+  align-items: center;
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.hand {
+  font-weight: 700;
+  text-align: right;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.newGame {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.primary,
+.secondary {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--gold);
+  color: #1b1b1f;
+}
+
+.secondary {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: transparent;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .hand {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
