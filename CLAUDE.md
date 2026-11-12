@@ -53,8 +53,22 @@ pnpm --filter @memory-poker/engine test:watch
 
 ## 환경
 
-- Windows + VS Code, 터미널은 **Git Bash**. 셸 명령은 bash 문법으로 작성 (PowerShell 전용 문법 사용 금지).
+- 두 기기를 번갈아 사용: 집은 **Windows + Git Bash**, 외부는 **macOS + zsh** (둘 다 VS Code).
+  현재 어느 쪽인지는 세션의 플랫폼 정보(win32 / darwin)로 판단한다.
+- 셸 명령은 양쪽에서 똑같이 동작하는 bash 문법으로 작성한다. PowerShell·cmd 전용 문법 금지.
+- OS마다 다른 명령·옵션은 피한다: `open`/`start`, `pbcopy`/`clip`, `sed -i`(GNU/BSD 차이), `grep -P` 등.
+  파일 수정은 셸 명령 대신 편집 도구로 한다.
+- `package.json` scripts는 Windows에서 cmd.exe로 실행되므로 크로스플랫폼으로 작성한다.
+  `rm -rf`, `FOO=1 cmd` 같은 bash 전용 문법 대신 도구 자체 옵션이나 Node 스크립트를 쓴다.
+- 기기 간 동기화는 git으로만 한다. `node_modules`는 OS별 바이너리가 있어 복사하지 않고 기기마다 `pnpm install`.
+- 줄바꿈은 LF로 통일한다 (`.gitattributes`로 강제됨).
 - 대화형 프롬프트가 있는 명령은 다른 명령과 한 번에 이어서 실행하지 않는다.
+
+### 기기 전환 순서
+
+- **떠나는 기기**: 진행 중인 작업도 브랜치에 커밋하고 push한다 (미완성이면 `wip:` 커밋 허용, squash merge로 정리됨).
+- **도착한 기기**: `git pull` → `pnpm install` → 작업 시작.
+- Claude Code의 자동 메모리는 기기별로 저장되어 동기화되지 않는다. 두 기기에 공통으로 필요한 규칙은 이 파일에 적는다.
 
 ## Git 규칙
 
