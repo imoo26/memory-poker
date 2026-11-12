@@ -1,0 +1,67 @@
+.start {
+  width: min(100%, 460px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.rules {
+  margin: 0;
+  padding: 14px 18px 14px 36px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-dim);
+}
+
+.difficulty {
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.difficulty legend {
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.option input {
+  accent-color: var(--gold);
+}
+
+.option strong {
+  font-size: 18px;
+}
+
+.option span {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.checked {
+  border-color: var(--gold);
+  background: rgba(244, 201, 93, 0.1);
+}
+
+.startButton {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--gold);
+  color: #1b1b1f;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+}

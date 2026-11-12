@@ -1,0 +1,79 @@
+.card {
+  --w: var(--card-w, 72px);
+  width: var(--w);
+  aspect-ratio: 5 / 7;
+  perspective: 700px;
+  flex-shrink: 0;
+}
+
+.small {
+  --w: 46px;
+}
+
+.inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.55s ease;
+}
+
+/* 앞면이 보일 때는 안쪽을 180도 돌려 front 면이 앞으로 오게 한다 */
+.faceUp .inner {
+  transform: rotateY(180deg);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--w) * 0.11);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.back {
+  border: calc(var(--w) * 0.05) solid #f5f5f5;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--card-back-1) 0 5px,
+    var(--card-back-2) 5px 10px
+  );
+}
+
+.front {
+  transform: rotateY(180deg);
+  background: var(--card-face);
+  color: var(--card-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.red {
+  color: var(--card-red);
+}
+
+.corner {
+  position: absolute;
+  top: calc(var(--w) * 0.06);
+  left: calc(var(--w) * 0.09);
+  font-size: calc(var(--w) * 0.24);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+.center {
+  font-size: calc(var(--w) * 0.5);
+  line-height: 1;
+  transform: translate(calc(var(--w) * 0.06), calc(var(--w) * 0.08));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* 애니메이션은 사실상 없애되 transitionend는 발생하도록 아주 짧게 둔다 */
+  .inner {
+    transition-duration: 1ms;
+  }
+}

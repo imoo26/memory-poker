@@ -1,0 +1,94 @@
+.board {
+  --card-w: clamp(52px, 17vw, 84px);
+  display: grid;
+  grid-template-columns: repeat(4, var(--card-w));
+  gap: clamp(8px, 2.4vw, 14px);
+  justify-content: center;
+}
+
+.cell {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 10px;
+  outline: 3px solid transparent;
+  outline-offset: 3px;
+  transition:
+    outline-color 0.15s,
+    transform 0.15s;
+}
+
+.cell:disabled {
+  cursor: default;
+}
+
+.selectable {
+  cursor: pointer;
+}
+
+.selectable:hover {
+  transform: translateY(-3px);
+}
+
+.selectable:focus-visible {
+  outline-color: var(--gold);
+}
+
+.player {
+  outline-color: var(--player);
+}
+
+.ai {
+  outline-color: var(--ai);
+}
+
+.player.ai {
+  outline-color: var(--player);
+  box-shadow: 0 0 0 9px var(--ai);
+}
+
+/* 카드 앞면의 랭크 표시(왼쪽 위)를 가리지 않도록 왼쪽 아래에 둔다 */
+.label {
+  position: absolute;
+  bottom: -8px;
+  left: -8px;
+  z-index: 1;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 12px;
+  background: var(--gold);
+  color: #1b1b1f;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 24px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.tags {
+  position: absolute;
+  right: -6px;
+  bottom: -8px;
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+}
+
+.tag {
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  color: #fff;
+}
+
+.tagPlayer {
+  background: var(--player);
+}
+
+.tagAi {
+  background: var(--ai);
+}
