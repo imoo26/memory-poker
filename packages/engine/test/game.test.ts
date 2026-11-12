@@ -7,6 +7,7 @@ import {
   INITIAL_GAME_STATE,
   MEMORIZE_MS,
   type MemorizeState,
+  type ReadyState,
   type ResultState,
   SELECT_MS,
   type SelectState,
@@ -21,8 +22,14 @@ function play(state: GameState, ...actions: GameAction[]): GameState {
   return actions.reduce(gameReducer, state);
 }
 
+/** START까지 (준비 단계) */
 function start(seed = 1, difficulty: Difficulty = 'normal'): GameState {
   return gameReducer(INITIAL_GAME_STATE, { type: 'START', difficulty, seed });
+}
+
+/** START → "시작" 버튼까지 (암기 단계) */
+function begin(seed = 1, difficulty: Difficulty = 'normal'): GameState {
+  return play(start(seed, difficulty), { type: 'BEGIN_MEMORIZE' });
 }
 
 function toggle(...indices: CellIndex[]): GameAction[] {
@@ -30,6 +37,12 @@ function toggle(...indices: CellIndex[]): GameAction[] {
 }
 
 // 단계를 확인하면서 타입을 좁히는 헬퍼. 단계가 다르면 테스트 실패
+function asReady(state: GameState): ReadyState {
+  if (state.phase !== 'ready') {
+    throw new Error(`expected ready, got ${state.phase}`);
+  }
+  return state;
+}
 function asMemorize(state: GameState): MemorizeState {
   if (state.phase !== 'memorize') {
     throw new Error(`expected memorize, got ${state.phase}`);
@@ -51,7 +64,7 @@ function asResult(state: GameState): ResultState {
 
 /** 선택 단계까지 진행 */
 function toSelect(seed = 1, difficulty: Difficulty = 'normal'): SelectState {
-  return asSelect(play(start(seed, difficulty), { type: 'MEMORIZE_TIME_UP' }));
+  return asSelect(play(begin(seed, difficulty), { type: 'MEMORIZE_TIME_UP' }));
 }
 
 /** 플레이어가 컴퓨터와 같은 2칸을 골라 무승부가 된 결과 상태 */
@@ -87,11 +100,14 @@ describe('상수와 초기 상태', () => {
   });
 });
 
-describe('정상 흐름: START → 시간 종료 → 2칸 선택 → 제출 → 결과', () => {
+describe('정상 흐름: START → 시작 버튼 → 시간 종료 → 2칸 선택 → 제출 → 결과', () => {
   test('각 단계로 순서대로 넘어가고 결과가 판정됨', () => {
-    const memorize = asMemorize(start(7, 'hard'));
-    expect(memorize).toMatchObject({ difficulty: 'hard', seed: 7, round: 1 });
-    expect(memorize.deal.board).toHaveLength(16);
+    const ready = asReady(start(7, 'hard'));
+    expect(ready).toMatchObject({ difficulty: 'hard', seed: 7, round: 1 });
+    expect(ready.deal.board).toHaveLength(16);
+
+    const memorize = asMemorize(play(ready, { type: 'BEGIN_MEMORIZE' }));
+    expect(memorize.deal).toBe(ready.deal); // 준비 단계에서 정한 배치 그대로
 
     const select = asSelect(play(memorize, { type: 'MEMORIZE_TIME_UP' }));
     expect(select.playerSelection).toEqual([]);
@@ -143,7 +159,7 @@ describe('정상 흐름: START → 시간 종료 → 2칸 선택 → 제출 → 
       seed: 5,
       aiConfig: { hardRatio: 1 / 120, easyRatio: 0.3 },
     });
-    const select = asSelect(play(state, { type: 'MEMORIZE_TIME_UP' }));
+    const select = asSelect(play(state, { type: 'BEGIN_MEMORIZE' }, { type: 'MEMORIZE_TIME_UP' }));
     expect(select.aiSelection).toEqual(rankSelections(select.deal)[0]?.selection);
   });
 
@@ -163,8 +179,8 @@ describe('정상 흐름: START → 시간 종료 → 2칸 선택 → 제출 → 
     expect(toSelect(42).deal).not.toEqual(toSelect(43).deal);
   });
 
-  test('결과 단계에서 START하면 새 게임 1판으로 시작', () => {
-    const next = asMemorize(play(toPlayerWin(), { type: 'START', difficulty: 'easy', seed: 9 }));
+  test('결과 단계에서 START하면 새 게임 1판 준비 단계로', () => {
+    const next = asReady(play(toPlayerWin(), { type: 'START', difficulty: 'easy', seed: 9 }));
     expect(next).toMatchObject({ difficulty: 'easy', seed: 9, round: 1 });
   });
 });
@@ -231,9 +247,9 @@ describe('무승부와 재대결', () => {
     expect(toDraw().result).toMatchObject({ reason: 'hand', winner: 'draw' });
   });
 
-  test('REMATCH → 판 번호 증가, 새 배치로 암기 단계부터', () => {
+  test('REMATCH → 판 번호 증가, 새 배치로 준비 단계부터', () => {
     const draw = toDraw();
-    const next = asMemorize(play(draw, { type: 'REMATCH' }));
+    const next = asReady(play(draw, { type: 'REMATCH' }));
     expect(next.round).toBe(2);
     expect(next).toMatchObject({ difficulty: draw.difficulty, seed: draw.seed });
     expect(next.deal.board).not.toEqual(draw.deal.board);
@@ -245,9 +261,11 @@ describe('무승부와 재대결', () => {
   });
 
   test('재대결에서 다시 무승부면 또 REMATCH 가능 (판 번호 계속 증가)', () => {
-    const round2 = asSelect(play(toDraw(), { type: 'REMATCH' }, { type: 'MEMORIZE_TIME_UP' }));
+    const round2 = asSelect(
+      play(toDraw(), { type: 'REMATCH' }, { type: 'BEGIN_MEMORIZE' }, { type: 'MEMORIZE_TIME_UP' }),
+    );
     const draw2 = play(round2, ...toggle(...round2.aiSelection), { type: 'SUBMIT' });
-    expect(asMemorize(play(draw2, { type: 'REMATCH' })).round).toBe(3);
+    expect(asReady(play(draw2, { type: 'REMATCH' })).round).toBe(3);
   });
 
   test('무승부가 아니면 REMATCH 무시', () => {
@@ -258,6 +276,7 @@ describe('무승부와 재대결', () => {
 
 describe('잘못된 단계의 액션은 무시 (같은 state 반환)', () => {
   const START: GameAction = { type: 'START', difficulty: 'normal', seed: 99 };
+  const BEGIN: GameAction = { type: 'BEGIN_MEMORIZE' };
   const MEMORIZE_TIME_UP: GameAction = { type: 'MEMORIZE_TIME_UP' };
   const TOGGLE: GameAction = { type: 'TOGGLE_CELL', index: 0 };
   const SUBMIT: GameAction = { type: 'SUBMIT' };
@@ -265,24 +284,36 @@ describe('잘못된 단계의 액션은 무시 (같은 state 반환)', () => {
   const REVEAL: GameAction = { type: 'TOGGLE_REVEAL_ALL' };
   const REMATCH: GameAction = { type: 'REMATCH' };
 
-  test.each([MEMORIZE_TIME_UP, TOGGLE, SUBMIT, SELECT_TIME_UP, REVEAL, REMATCH])(
+  test.each([BEGIN, MEMORIZE_TIME_UP, TOGGLE, SUBMIT, SELECT_TIME_UP, REVEAL, REMATCH])(
     'idle: %j',
     (action) => {
       expect(gameReducer(INITIAL_GAME_STATE, action)).toBe(INITIAL_GAME_STATE);
     },
   );
 
-  test.each([START, TOGGLE, SUBMIT, SELECT_TIME_UP, REVEAL, REMATCH])('memorize: %j', (action) => {
-    const state = start();
-    expect(gameReducer(state, action)).toBe(state);
-  });
+  test.each([START, MEMORIZE_TIME_UP, TOGGLE, SUBMIT, SELECT_TIME_UP, REVEAL, REMATCH])(
+    'ready: %j',
+    (action) => {
+      const state = start();
+      expect(gameReducer(state, action)).toBe(state);
+    },
+  );
 
-  test.each([START, MEMORIZE_TIME_UP, REVEAL, REMATCH])('select: %j', (action) => {
+  // 암기 단계를 일찍 끝내는 액션은 없다: MEMORIZE_TIME_UP 외에는 모두 무시
+  test.each([START, BEGIN, TOGGLE, SUBMIT, SELECT_TIME_UP, REVEAL, REMATCH])(
+    'memorize: %j',
+    (action) => {
+      const state = begin();
+      expect(gameReducer(state, action)).toBe(state);
+    },
+  );
+
+  test.each([START, BEGIN, MEMORIZE_TIME_UP, REVEAL, REMATCH])('select: %j', (action) => {
     const state = play(toSelect(), ...toggle(2));
     expect(gameReducer(state, action)).toBe(state);
   });
 
-  test.each([MEMORIZE_TIME_UP, TOGGLE, SUBMIT, SELECT_TIME_UP, REMATCH])(
+  test.each([BEGIN, MEMORIZE_TIME_UP, TOGGLE, SUBMIT, SELECT_TIME_UP, REMATCH])(
     'result(무승부 아님): %j',
     (action) => {
       const state = toPlayerWin();
@@ -292,9 +323,9 @@ describe('잘못된 단계의 액션은 무시 (같은 state 반환)', () => {
 });
 
 describe('공유 카드 공개 시점 (visibleCommunity)', () => {
-  test('암기 단계 null → 선택 단계 3장 → 결과 단계 3장 → 재대결 암기 단계 null', () => {
-    const memorize = start();
-    expect(visibleCommunity(memorize)).toBeNull();
+  test('준비·암기 단계 null → 선택 단계 3장 → 결과 단계 3장 → 재대결 준비·암기 단계 null', () => {
+    expect(visibleCommunity(start())).toBeNull();
+    expect(visibleCommunity(begin())).toBeNull();
 
     const select = toSelect();
     expect(visibleCommunity(select)).toEqual(select.deal.community);
@@ -302,13 +333,19 @@ describe('공유 카드 공개 시점 (visibleCommunity)', () => {
     const draw = toDraw();
     expect(visibleCommunity(draw)).toEqual(draw.deal.community);
 
-    expect(visibleCommunity(play(draw, { type: 'REMATCH' }))).toBeNull();
+    const rematch = play(draw, { type: 'REMATCH' });
+    expect(visibleCommunity(rematch)).toBeNull();
+    expect(visibleCommunity(play(rematch, { type: 'BEGIN_MEMORIZE' }))).toBeNull();
   });
 });
 
 describe('보드 공개 시점 (visibleBoard)', () => {
+  test('준비 단계에서는 16칸 모두 null', () => {
+    expect(visibleBoard(start())).toEqual(ALL_HIDDEN);
+  });
+
   test('암기 단계에서는 16장 앞면 (deal.board와 같음)', () => {
-    const memorize = asMemorize(start());
+    const memorize = asMemorize(begin());
     expect(visibleBoard(memorize)).toEqual(memorize.deal.board);
   });
 
@@ -370,7 +407,10 @@ describe('전체 카드 보기 (TOGGLE_REVEAL_ALL)', () => {
   });
 
   test('암기·선택 단계에서는 상태가 바뀌지 않음 (선택 단계에서 보내도 16칸 모두 null)', () => {
-    const memorize = start();
+    const ready = start();
+    expect(play(ready, { type: 'TOGGLE_REVEAL_ALL' })).toBe(ready);
+
+    const memorize = begin();
     expect(play(memorize, { type: 'TOGGLE_REVEAL_ALL' })).toBe(memorize);
 
     const select = play(toSelect(), ...toggle(1, 2));
@@ -381,7 +421,9 @@ describe('전체 카드 보기 (TOGGLE_REVEAL_ALL)', () => {
 
   test('켠 채로 REMATCH → 새 판의 결과 단계에서 revealAll은 false', () => {
     const revealed = play(toDraw(), { type: 'TOGGLE_REVEAL_ALL' });
-    const nextSelect = asSelect(play(revealed, { type: 'REMATCH' }, { type: 'MEMORIZE_TIME_UP' }));
+    const nextSelect = asSelect(
+      play(revealed, { type: 'REMATCH' }, { type: 'BEGIN_MEMORIZE' }, { type: 'MEMORIZE_TIME_UP' }),
+    );
     expect(visibleBoard(nextSelect)).toEqual(ALL_HIDDEN);
     const nextResult = asResult(play(nextSelect, ...toggle(0, 1), { type: 'SUBMIT' }));
     expect(nextResult.revealAll).toBe(false);

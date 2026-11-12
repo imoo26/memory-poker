@@ -29,8 +29,11 @@ export const MEMORIZE_MS = 60_000;
 /** 선택 단계 시간 (UI 타이머가 사용) */
 export const SELECT_MS = 30_000;
 
-/** 'idle'은 START 전 (시작 화면) */
-export type Phase = 'idle' | 'memorize' | 'select' | 'result';
+/**
+ * - idle: START 전 (시작 화면)
+ * - ready: 게임 화면에서 "시작" 버튼 대기. 카드는 뒷면이고 타이머는 돌지 않는다
+ */
+export type Phase = 'idle' | 'ready' | 'memorize' | 'select' | 'result';
 export type Winner = 'player' | 'ai' | 'draw';
 
 /** 2칸을 골라 족보까지 판정된 쪽의 결과 */
@@ -79,6 +82,11 @@ export interface IdleState {
   readonly phase: 'idle';
 }
 
+/** 배치는 이미 정해져 있지만 아무 카드도 보여주지 않는다 */
+export interface ReadyState extends RoundInfo {
+  readonly phase: 'ready';
+}
+
 export interface MemorizeState extends RoundInfo {
   readonly phase: 'memorize';
 }
@@ -100,7 +108,7 @@ export interface ResultState extends RoundInfo {
   readonly revealAll: boolean;
 }
 
-export type GameState = IdleState | MemorizeState | SelectState | ResultState;
+export type GameState = IdleState | ReadyState | MemorizeState | SelectState | ResultState;
 
 export const INITIAL_GAME_STATE: GameState = { phase: 'idle' };
 
@@ -112,6 +120,7 @@ export type GameAction =
       /** 생략하면 DEFAULT_AI_CONFIG */
       readonly aiConfig?: AiConfig;
     }
+  | { readonly type: 'BEGIN_MEMORIZE' } // 준비 단계의 "시작" 버튼. UI는 이때부터 60초를 잰다
   | { readonly type: 'MEMORIZE_TIME_UP' }
   | { readonly type: 'TOGGLE_CELL'; readonly index: CellIndex }
   | { readonly type: 'SUBMIT' }
@@ -124,13 +133,14 @@ export type GameAction =
  *
  * | 액션               | 허용 단계         | 결과                                   |
  * | ------------------ | ----------------- | -------------------------------------- |
- * | START              | idle, result      | 1판 암기 단계                          |
+ * | START              | idle, result      | 1판 준비 단계                          |
+ * | BEGIN_MEMORIZE     | ready             | 암기 단계 (항상 60초, 조기 종료 없음)  |
  * | MEMORIZE_TIME_UP   | memorize          | 선택 단계 (컴퓨터 선택 결정)           |
  * | TOGGLE_CELL        | select            | 칸 선택/해제 (최대 2칸)                |
  * | SUBMIT             | select (2칸일 때) | 결과 단계                              |
  * | SELECT_TIME_UP     | select            | 결과 단계 (2칸 미만이면 시간 초과 패배) |
  * | TOGGLE_REVEAL_ALL  | result            | 전체 카드 보기 켜기/끄기               |
- * | REMATCH            | result (무승부)   | 다음 판 암기 단계                      |
+ * | REMATCH            | result (무승부)   | 다음 판 준비 단계                      |
  */
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -142,6 +152,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // 잘못된 AI 설정은 게임 도중이 아니라 시작할 때 바로 에러로 알린다
       computeBandSizes(enumerateSelections().length, aiConfig);
       return startRound(action.difficulty, aiConfig, action.seed, 1);
+    }
+
+    case 'BEGIN_MEMORIZE': {
+      if (state.phase !== 'ready') {
+        return state;
+      }
+      return { ...state, phase: 'memorize' };
     }
 
     case 'MEMORIZE_TIME_UP': {
@@ -210,6 +227,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 export function visibleBoard(state: GameState): readonly (Card | null)[] {
   switch (state.phase) {
     case 'idle':
+    case 'ready':
     case 'select':
       // 선택 단계에서는 플레이어가 고른 칸도 앞면을 보여주지 않는다 (기억에 의존해 고른다)
       return hiddenBoard();
@@ -227,7 +245,7 @@ export function visibleBoard(state: GameState): readonly (Card | null)[] {
   }
 }
 
-/** 지금 화면에 보여줄 공유 카드. 시작 전과 암기 단계에서는 null */
+/** 지금 화면에 보여줄 공유 카드. 시작 전, 준비, 암기 단계에서는 null */
 export function visibleCommunity(state: GameState): readonly [Card, Card, Card] | null {
   if (state.phase === 'select' || state.phase === 'result') {
     return state.deal.community;
@@ -244,9 +262,9 @@ function startRound(
   aiConfig: AiConfig,
   seed: number,
   round: number,
-): MemorizeState {
+): ReadyState {
   const deal = dealRound(createRng(deriveSeed(seed, round, 'deal')));
-  return { phase: 'memorize', difficulty, aiConfig, seed, round, deal };
+  return { phase: 'ready', difficulty, aiConfig, seed, round, deal };
 }
 
 /**
