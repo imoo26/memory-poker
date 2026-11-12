@@ -1,6 +1,3 @@
-export const BOARD_SIZE = 16;
-export const COMMUNITY_CARD_COUNT = 3;
-
 export type { Card, Rank, Rng, Suit } from './card';
 export {
   RANKS,
@@ -17,3 +14,18 @@ export {
 
 export type { HandValue } from './evaluator';
 export { HAND_SIZE, HandCategory, compareHands, evaluateHand } from './evaluator';
+
+export type { CellIndex, CellLabel, Deal, Selection } from './board';
+export {
+  BOARD_SIZE,
+  CELL_LABELS,
+  COMMUNITY_CARD_COUNT,
+  SELECTION_SIZE,
+  dealRound,
+  evaluateSelection,
+  indexToLabel,
+  indexToNumber,
+  isValidCellIndex,
+  isValidSelection,
+  labelToIndex,
+} from './board';

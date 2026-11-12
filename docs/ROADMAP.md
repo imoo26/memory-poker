@@ -167,18 +167,18 @@ export type Selection = readonly [CellIndex, CellIndex];
 
 ### 작업
 
-- [ ] `CELL_LABELS`, `indexToLabel`, `labelToIndex`, `indexToNumber`
-- [ ] `dealRound(rng)`: 셔플한 덱에서 앞 16장은 보드, 다음 3장은 공유 카드
-- [ ] `isValidSelection(sel)`: 0~15 범위, 서로 다른 2칸
-- [ ] `evaluateSelection(deal, sel)`: 선택 2장 + 공유 3장 → `HandValue`
+- [x] `CELL_LABELS`, `indexToLabel`, `labelToIndex`, `indexToNumber`
+- [x] `dealRound(rng)`: 셔플한 덱에서 앞 16장은 보드, 다음 3장은 공유 카드
+- [x] `isValidSelection(sel)`: 0~15 범위, 서로 다른 2칸
+- [x] `evaluateSelection(deal, sel)`: 선택 2장 + 공유 3장 → `HandValue`
 
 ### 테스트
 
-- [ ] 보드 16장 + 공유 3장 = 19장 모두 서로 다름
-- [ ] 같은 시드 → 같은 배치
-- [ ] 라벨 변환: A↔0↔1번, P↔15↔16번
-- [ ] 잘못된 선택 에러: 같은 칸 두 번, 범위 밖, 1칸만
-- [ ] 알려진 배치로 `evaluateSelection` 결과 확인
+- [x] 보드 16장 + 공유 3장 = 19장 모두 서로 다름
+- [x] 같은 시드 → 같은 배치
+- [x] 라벨 변환: A↔0↔1번, P↔15↔16번
+- [x] 잘못된 선택 에러: 같은 칸 두 번, 범위 밖, 1칸만
+- [x] 알려진 배치로 `evaluateSelection` 결과 확인
 
 ### 배울 것
 
