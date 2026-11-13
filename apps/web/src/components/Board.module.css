@@ -1,8 +1,9 @@
 .board {
-  --card-w: clamp(52px, 17vw, 84px);
+  /* 화면 폭(17vw)과 높이(9dvh) 중 작은 쪽에 맞춰, 휴대폰에서도 보드와 공유 카드가 한 화면에 들어오게 한다 */
+  --card-w: clamp(44px, min(17vw, 9dvh), 84px);
   display: grid;
   grid-template-columns: repeat(4, var(--card-w));
-  gap: clamp(8px, 2.4vw, 14px);
+  gap: clamp(8px, 2.6vw, 14px);
   justify-content: center;
 }
 
@@ -67,12 +68,15 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
+/* 옆 칸의 A~P 라벨(왼쪽 아래)과 겹치지 않도록 카드 안쪽 오른쪽 위에 둔다 */
 .tags {
   position: absolute;
-  right: -6px;
-  bottom: -8px;
+  top: 4px;
+  right: 4px;
   z-index: 1;
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 2px;
 }
 

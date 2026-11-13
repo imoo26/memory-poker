@@ -333,13 +333,14 @@ JSX, 컴포넌트와 props, `useState`/`useReducer`/`useEffect`, effect 정리(c
 
 ## 7단계: 다듬기와 배포
 
-- [ ] 반응형 레이아웃 (모바일에서도 4x4 그리드가 보이게)
-- [ ] 키보드 입력: A~P 키로 칸 선택, Enter로 제출
-- [ ] 접근성: 카드와 칸에 `aria-label`
-- [ ] 전적 저장: 난이도별 승/패를 `localStorage`에 기록
-- [ ] (선택) 효과음, 개발용 AI 비율 조정 패널
-- [ ] 배포: GitHub Pages(Actions로 자동 배포, `vite.config.ts`의 `base: '/memory-poker/'`) 또는 Vercel
-- [ ] README: 게임 소개, 규칙 요약, 스크린샷 또는 GIF, 기술 스택, 실행 방법, 배포 URL
+- [x] 반응형 레이아웃 (모바일에서도 4x4 그리드가 보이게): 카드 크기를 화면 폭과 높이에 맞춤, 640px 이하에서는 공유 카드·제출 버튼·결과 패널을 보드 위로
+- [x] 키보드 입력: A~P 키로 칸 선택, Enter로 제출. `event.code`(물리 키) 기준이라 한글 입력 상태에서도 동작
+- [x] 접근성: 카드와 칸에 `aria-label` (화면에 보이는 정보만 읽음: 선택 단계는 'A칸, 뒷면'), 단계 안내 문구 `aria-live`
+- [x] 전적 저장: 난이도별 승/패를 `localStorage`에 기록. 무승부는 재대결로 이어지므로 기록하지 않고 승부가 난 게임만 1번, 시간 초과 패배는 패배. 시작 화면에 전적과 초기화 버튼
+- [x] (선택) 개발용 AI 비율 조정 패널: URL `?dev`. 검증은 엔진의 `computeBandSizes`
+- [ ] (선택) 효과음: 미구현
+- [x] 배포: GitHub Pages(Actions로 자동 배포 `.github/workflows/deploy.yml`, `vite.config.ts`의 `base: '/memory-poker/'`). 레포 Settings → Pages에서 Source를 "GitHub Actions"로 설정해야 동작
+- [x] README: 게임 소개, 규칙 요약, 스크린샷, 기술 스택, 실행 방법, 배포 URL
 
 ---
 

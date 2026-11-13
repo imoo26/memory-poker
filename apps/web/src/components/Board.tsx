@@ -1,5 +1,6 @@
 import { type Card, type CellIndex, indexToLabel } from '@memory-poker/engine';
 import { cx } from '../cx';
+import { cardName } from '../labels';
 import { PlayingCard } from './PlayingCard';
 import styles from './Board.module.css';
 
@@ -44,13 +45,17 @@ export function Board({
             )}
             disabled={!selectable}
             aria-pressed={selectable ? byPlayer : undefined}
-            aria-label={showLabels ? `${label}칸` : undefined}
+            aria-label={cellAriaLabel(index, card, showLabels, byPlayer, byAi)}
             onClick={() => onToggle(index)}
           >
             <PlayingCard card={card} />
-            {showLabels && <span className={styles.label}>{label}</span>}
+            {showLabels && (
+              <span className={styles.label} aria-hidden="true">
+                {label}
+              </span>
+            )}
             {(byPlayer || byAi) && (
-              <span className={styles.tags}>
+              <span className={styles.tags} aria-hidden="true">
                 {byPlayer && <span className={cx(styles.tag, styles.tagPlayer)}>나</span>}
                 {byAi && <span className={cx(styles.tag, styles.tagAi)}>AI</span>}
               </span>
@@ -60,4 +65,28 @@ export function Board({
       })}
     </div>
   );
+}
+
+/**
+ * 스크린 리더용 칸 이름. 화면에 보이는 정보만 읽어 준다.
+ * 예: 선택 단계 'A칸, 뒷면' / 결과 단계 'A칸, 하트 A, 내 선택' / 암기 단계 '1행 1열, 하트 A'
+ */
+function cellAriaLabel(
+  index: CellIndex,
+  card: Card | null,
+  showLabels: boolean,
+  byPlayer: boolean,
+  byAi: boolean,
+): string {
+  const position = showLabels
+    ? `${indexToLabel(index)}칸`
+    : `${Math.floor(index / 4) + 1}행 ${(index % 4) + 1}열`;
+  const parts = [position, card === null ? '뒷면' : cardName(card)];
+  if (byPlayer) {
+    parts.push('내 선택');
+  }
+  if (byAi) {
+    parts.push('컴퓨터 선택');
+  }
+  return parts.join(', ');
 }

@@ -1,6 +1,7 @@
-import type { Card, Difficulty, GameResult, HandValue, ResultState } from '@memory-poker/engine';
+import type { Card, Difficulty, HandValue, ResultState } from '@memory-poker/engine';
 import { cx } from '../cx';
-import { DIFFICULTIES, DIFFICULTY_LABELS, handName } from '../labels';
+import { DIFFICULTIES, DIFFICULTY_LABELS, handName, resultHeadline } from '../labels';
+import type { WinLoss } from '../stats';
 import { PlayingCard } from './PlayingCard';
 import styles from './ResultPanel.module.css';
 
@@ -9,26 +10,19 @@ interface ResultPanelProps {
   onToggleRevealAll: () => void;
   onRematch: () => void;
   onNewGame: (difficulty: Difficulty) => void;
-}
-
-function headline(result: GameResult): { text: string; tone: 'win' | 'lose' | 'draw' } {
-  if (result.reason === 'timeout') {
-    return { text: '시간 초과 패배', tone: 'lose' };
-  }
-  switch (result.winner) {
-    case 'player':
-      return { text: '승리!', tone: 'win' };
-    case 'ai':
-      return { text: '패배', tone: 'lose' };
-    case 'draw':
-      return { text: '무승부', tone: 'draw' };
-  }
+  record: WinLoss;
 }
 
 /** 결과: 양쪽 선택 카드와 족보, 승패, 전체 카드 보기, 재대결/새 게임 */
-export function ResultPanel({ state, onToggleRevealAll, onRematch, onNewGame }: ResultPanelProps) {
+export function ResultPanel({
+  state,
+  onToggleRevealAll,
+  onRematch,
+  onNewGame,
+  record,
+}: ResultPanelProps) {
   const { result } = state;
-  const { text, tone } = headline(result);
+  const { text, tone } = resultHeadline(result);
   const isDraw = result.winner === 'draw';
 
   return (
@@ -76,7 +70,13 @@ export function ResultPanel({ state, onToggleRevealAll, onRematch, onNewGame }: 
           </div>
         )}
       </div>
-      {isDraw && <p className={styles.hint}>무승부입니다. 새 카드로 처음부터 다시 겨룹니다.</p>}
+      {isDraw ? (
+        <p className={styles.hint}>무승부입니다. 새 카드로 처음부터 다시 겨룹니다.</p>
+      ) : (
+        <p className={styles.hint}>
+          난이도 {DIFFICULTY_LABELS[state.difficulty]} 전적: {record.wins}승 {record.losses}패
+        </p>
+      )}
     </section>
   );
 }

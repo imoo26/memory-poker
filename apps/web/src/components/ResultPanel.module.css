@@ -108,13 +108,42 @@
   text-align: center;
 }
 
-@media (max-width: 420px) {
+/* 휴대폰: 이름과 족보를 왼쪽에 위아래로, 카드는 오른쪽에 */
+@media (max-width: 640px) {
+  .panel {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .headline {
+    font-size: 22px;
+  }
+
   .row {
     grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'who cards'
+      'hand cards';
+    row-gap: 0;
+  }
+
+  .who {
+    grid-area: who;
+    align-self: end;
+  }
+
+  .cards {
+    grid-area: cards;
+    min-height: 0;
   }
 
   .hand {
-    grid-column: 1 / -1;
+    grid-area: hand;
+    align-self: start;
     text-align: left;
+  }
+
+  .actions {
+    justify-content: center;
   }
 }

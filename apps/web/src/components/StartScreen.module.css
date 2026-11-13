@@ -45,9 +45,17 @@
   font-size: 18px;
 }
 
-.option span {
+.description {
+  flex: 1;
   color: var(--text-dim);
   font-size: 14px;
+}
+
+.record {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .checked {
@@ -63,5 +71,21 @@
   color: #1b1b1f;
   font-size: 18px;
   font-weight: 800;
+  cursor: pointer;
+}
+
+.startButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.reset {
+  align-self: center;
+  padding: 4px 10px;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-decoration: underline;
   cursor: pointer;
 }

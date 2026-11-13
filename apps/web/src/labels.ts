@@ -1,6 +1,12 @@
 // 화면 표시용 한글 이름. 규칙 판정은 엔진이 하고, 여기서는 이름만 붙인다.
 
-import { type Card, type Difficulty, HandCategory, type HandValue } from '@memory-poker/engine';
+import {
+  type Card,
+  type Difficulty,
+  type GameResult,
+  HandCategory,
+  type HandValue,
+} from '@memory-poker/engine';
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   easy: '하',
@@ -69,4 +75,22 @@ export function isRed(card: Card): boolean {
 /** 스크린 리더용: '하트 A' */
 export function cardName(card: Card): string {
   return `${SUIT_NAMES[card.suit]} ${RANK_LABELS[card.rank]}`;
+}
+
+/** 결과 제목과 색 구분 */
+export function resultHeadline(result: GameResult): {
+  text: string;
+  tone: 'win' | 'lose' | 'draw';
+} {
+  if (result.reason === 'timeout') {
+    return { text: '시간 초과 패배', tone: 'lose' };
+  }
+  switch (result.winner) {
+    case 'player':
+      return { text: '승리!', tone: 'win' };
+    case 'ai':
+      return { text: '패배', tone: 'lose' };
+    case 'draw':
+      return { text: '무승부', tone: 'draw' };
+  }
 }

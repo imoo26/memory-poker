@@ -236,6 +236,9 @@ importers:
       vite:
         specifier: ^8.3.6
         version: 8.3.7(@types/node@24.19.2)
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@types/node@24.19.2)(vite@8.3.7(@types/node@24.19.2))
 
   packages/engine: {}
 

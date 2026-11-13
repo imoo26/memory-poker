@@ -28,6 +28,12 @@
   font-weight: 600;
 }
 
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
 .table {
   width: 100%;
   display: flex;
@@ -62,4 +68,42 @@
 .primary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* 키보드 안내는 마우스·키보드 환경에서만 */
+@media (hover: none) {
+  .hint {
+    display: none;
+  }
+}
+
+/* 휴대폰: 공유 카드·제출 버튼·결과 패널을 보드 위로 올려 스크롤 없이 보이게 한다 */
+@media (max-width: 640px) {
+  .game {
+    gap: 10px;
+  }
+
+  .status {
+    min-height: 0;
+  }
+
+  .table {
+    gap: 14px;
+  }
+
+  .side {
+    order: -1;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  .primary {
+    min-width: 0;
+    padding: 10px 16px;
+    font-size: 16px;
+  }
 }
