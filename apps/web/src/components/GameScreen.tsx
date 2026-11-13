@@ -8,7 +8,9 @@ import {
 } from '@memory-poker/engine';
 import { TIMING } from '../config';
 import { useCountdown } from '../hooks/useCountdown';
-import { DIFFICULTY_LABELS } from '../labels';
+import { useKeyboardControls } from '../hooks/useKeyboardControls';
+import { DIFFICULTY_LABELS, resultHeadline } from '../labels';
+import type { WinLoss } from '../stats';
 import { Board } from './Board';
 import { CommunityCards } from './CommunityCards';
 import { ResultPanel } from './ResultPanel';
@@ -20,11 +22,14 @@ interface GameScreenProps {
   state: Exclude<GameState, IdleState>;
   dispatch: (action: GameAction) => void;
   onNewGame: (difficulty: Difficulty) => void;
+  /** 현재 난이도의 전적 (결과 패널에 표시) */
+  record: WinLoss;
 }
 
 /** 게임 화면: 준비 → 암기 → 선택 → 결과. 카드는 엔진의 visibleBoard/visibleCommunity 결과만 그린다. */
-export function GameScreen({ state, dispatch, onNewGame }: GameScreenProps) {
+export function GameScreen({ state, dispatch, onNewGame, record }: GameScreenProps) {
   const { phase } = state;
+  useKeyboardControls(state, dispatch);
   const timed = phase === 'memorize' || phase === 'select';
   const totalMs = phase === 'memorize' ? TIMING.memorizeMs : TIMING.selectMs;
 
@@ -49,7 +54,12 @@ export function GameScreen({ state, dispatch, onNewGame }: GameScreenProps) {
       </div>
 
       <div className={styles.status}>
-        <p className={styles.message}>{phaseMessage(state)}</p>
+        <p className={styles.message} aria-live="polite">
+          {phaseMessage(state)}
+        </p>
+        {phase === 'select' && (
+          <p className={styles.hint}>키보드: A~P 키로 칸 선택, Enter로 제출</p>
+        )}
         {timed && <Timer remainingMs={remainingMs} totalMs={totalMs} />}
       </div>
 
@@ -93,6 +103,7 @@ export function GameScreen({ state, dispatch, onNewGame }: GameScreenProps) {
               onToggleRevealAll={() => dispatch({ type: 'TOGGLE_REVEAL_ALL' })}
               onRematch={() => dispatch({ type: 'REMATCH' })}
               onNewGame={onNewGame}
+              record={record}
             />
           )}
         </div>
@@ -113,6 +124,6 @@ function phaseMessage(state: Exclude<GameState, IdleState>): string {
     case 'select':
       return '기억을 떠올려 2칸을 고르고 제출하세요. 다시 누르면 선택이 해제됩니다.';
     case 'result':
-      return '결과';
+      return `결과: ${resultHeadline(state.result).text}`;
   }
 }

@@ -18,3 +18,18 @@
   display: flex;
   gap: 10px;
 }
+
+@media (max-width: 640px) {
+  .community {
+    --card-w: clamp(40px, 11vw, 56px);
+    gap: 4px;
+  }
+
+  .title {
+    font-size: 12px;
+  }
+
+  .cards {
+    gap: 6px;
+  }
+}
